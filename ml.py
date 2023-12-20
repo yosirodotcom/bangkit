@@ -1,30 +1,12 @@
-import time
-start_time = time.time()
-
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import logging
-logging.getLogger('tensorflow').setLevel(logging.ERROR)
-import warnings
-warnings.filterwarnings("ignore", message="Unable to register .* factory: Attempting to register factory", category=UserWarning, module='external/local_xla')
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from typing import Dict, Text
-# from tensorflow.keras.layers import StringLookup, Embedding
-
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-# from tensorflow import keras
 import tensorflow_recommenders as tfrs
-# import sqlite3
-# from google.cloud import storage
-# from datetime import datetime
 import mysql.connector
-# import sys
-from flask import Flask, request, jsonify
-import tempfile
 
 
 cnx = mysql.connector.connect(
@@ -210,44 +192,19 @@ index_model.index_from_dataset(
 )
 
 
-# Get recommendations.
-def predict(x):
-    _, ID_umkm = index_model(tf.constant([x]))
+# Get the absolute path of the current file
+current_file = os.path.abspath(__file__)
 
-print(predict("42"))
-# app = Flask(__name__)
-#
-# @app.route("/", methods=["POST"])
-# def index():
-#     if request.method == "POST":
-#         data = request.get_json()
-#
-#         # Check if the 'value' key is present in the JSON data
-#         if 'value' not in data:
-#             return jsonify({"error": "no 'value' key in JSON data"})
-#
-#         try:
-#             # Convert the 'value' to an integer
-#             input_integer = int(data['value'])
-#
-#             # Process the integer (modify this function accordingly)
-#             result = predict(input_integer)
-#
-#             # Return the result as JSON
-#             return jsonify(result)
-#         except ValueError:
-#             return jsonify({"error": "Invalid integer value"})
-#         except Exception as e:
-#             return jsonify({"error": str(e)})
-#
-#     return "OK"
+# Get the root project directory, by removing last part of the path
+project_root = os.path.dirname(current_file)
 
-end_time = time.time()
+# Model output directory under project root
+model_dir = os.path.join(project_root, 'model')
 
-elapsed_time = end_time - start_time
+if not os.path.exists(model_dir):
+    os.makedirs(model_dir)
 
-print(f"Elapsed Time: {elapsed_time} seconds")
-
-
-# if __name__ == "__main__":
-#     app.run(debug=True)
+# Save model to this dir
+tf.saved_model.save(obj=model,
+                    export_dir=model_dir,
+                    signatures=tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY)
